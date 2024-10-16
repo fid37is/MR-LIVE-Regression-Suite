@@ -3,18 +3,23 @@
 describe('Login Test Suite', () => {
   const baseUrl = Cypress.env('baseUrl')
 
+  let credentials
+
   beforeEach(() => {
+    cy.fixture('credentials').then((creds) => {
+      credentials = creds
+    })
     cy.visit(`${baseUrl}`)
   })
 
     it('Sign in with a valid email/username and valid password', () => {
-      cy.login('bqa.rkwonkoso', '1234Phyl!')
+      cy.login(credentials.email, credentials.password)
       cy.url().should('include', '/dashboard')
       cy.contains('Home').should('be.visible')
     })
 
     it('When signed in, clicking on the log out button should sign the user out of the app', () => {
-      cy.login('bqa.rkwonkoso', '1234Phyl!')
+      cy.login(credentials.email, credentials.password)
       cy.contains('Logout').click()
       cy.get('h1').should('have.text', 'Log In')
     })
@@ -27,13 +32,25 @@ describe('Login Test Suite', () => {
     })
 
     it('Verify Update password works within the web app', () => {
-      cy.login('fidelis+321@baobabpartners.com', '1234Phyl!')
-      cy.visit(`${baseUrl}/user/settings`)
-      cy.get('a[href="/user/settings/password"]').click()
-      cy.get('input[name="current-password"]').type('valid-password')
-      cy.get('input[name="new-password"]').type('new-password')
-      cy.get('button[type="submit"]').click()
-      cy.contains('Password updated successfully').should('be.visible')
+      cy.login(credentials.email, credentials.password)
+      cy.contains('Settings').click()
+      cy.contains('Password').click()
+      cy.get('input[name="oldPassword"]').type(credentials.password)
+      cy.get('input[name="newPassword"]').type('1234Papa!')
+      cy.get('input[name="confirmPassword"]').type('1234Papa!')
+      cy.contains('Update').click()
+      cy.contains('Password was reset successfully!!!').should('be.visible')
     })
 
+
+    it('Verify the user is locked out of the system when invalid auth credentials are entered a number of times', () => {
+      for (let i = 0; i < 6; i++) {
+        cy.login('fidelis+11@vpcarehome.com', 'invalid-password')
+        cy.wait(1000) // Adjust the wait time as needed
+      }
+      cy.contains('Too Many Login Attempt, Please Try Again After Few Minutes.').should('be.visible')
+    })
+    
+
 })
+
